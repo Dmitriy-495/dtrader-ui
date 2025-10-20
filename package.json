@@ -1,0 +1,27 @@
+{
+  "name": "dtrader-ui",
+  "version": "1.0.0",
+  "description": "TUI-клиент для торгового бота dtrader-crypto-2.0",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "crypto",
+    "trading",
+    "websocket",
+    "tui",
+    "nodejs"
+  ],
+  "author": "Dmitriy",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "terminal-kit": "^3.1.2",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
