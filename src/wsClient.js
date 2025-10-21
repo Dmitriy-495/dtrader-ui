@@ -1,80 +1,48 @@
 require("dotenv").config();
 const WebSocket = require("ws");
-const { logMessage } = require("./logger");
+const eventBus = require("./eventBus");
 
-const {
-  SERVER_IP,
-  DEV_SERVER_IP,
-  PORT,
-  APP_MODE = "development",
-} = process.env;
+const mode = process.env.APP_MODE || "dev";
+const ip =
+  mode === "production" ? process.env.SERVER_IP : process.env.DEV_SERVER_IP;
+const port = process.env.PORT || "8080";
+const protocol = port === "443" ? "wss" : "ws";
+const url = `${protocol}://${ip}:${port}`;
 
-const targetIP = APP_MODE === "production" ? SERVER_IP : DEV_SERVER_IP;
-const WS_URL = `ws://${targetIP}:${PORT}`;
+const ws = new WebSocket(url);
 
-function connectWebSocket() {
-  logMessage("info", `🚀 App mode: ${APP_MODE}`);
-  logMessage("info", `📡 Connecting to ${WS_URL}...`);
-
-  const ws = new WebSocket(WS_URL);
-
-  ws.on("open", () => {
-    logMessage("success", "✅ Connected to server");
-
-    const subscribeMessage = {
-      type: "subscribe",
-      channels: ["logs", "indicators", "ticks"],
-      timestamp: Date.now(),
-    };
-
-    ws.send(JSON.stringify(subscribeMessage));
-    logMessage(
-      "info",
-      "📨 Sent subscription to channels: logs, indicators, ticks"
-    );
+ws.on("open", () => {
+  eventBus.emit("log", {
+    type: "SUCCESS",
+    channel: "ws",
+    value: `Connected to ${url}`,
   });
+  eventBus.emit("status", "Connected");
 
-  ws.on("message", (data) => {
-    try {
-      const message = JSON.parse(data.toString());
+  // ✅ Никаких подписок — ждём system
+});
 
-      if (message.type === "log") {
-        logMessage(message.level, `[${message.category}] ${message.message}`);
-      }
+ws.on("message", (data) => {
+  try {
+    const msg = JSON.parse(data);
+    eventBus.emit("log", msg);
+  } catch (err) {
+    eventBus.emit("log", {
+      type: "ERROR",
+      channel: "ws",
+      value: `Parse error: ${err.message}`,
+    });
+  }
+});
 
-      if (message.type === "tick") {
-        logMessage("info", `📈 Tick: ${message.symbol} @ ${message.price}`);
-      }
-
-      if (message.type === "indicator") {
-        logMessage(
-          "info",
-          `📊 Indicator: ${message.name} → ${JSON.stringify(message.data)}`
-        );
-      }
-
-      if (message.type === "subscribed") {
-        logMessage(
-          "success",
-          `✅ Subscribed to: ${message.channels.join(", ")}`
-        );
-      }
-
-      if (message.type === "error") {
-        logMessage("error", `❌ ${message.error} - ${message.details}`);
-      }
-    } catch (err) {
-      logMessage("error", `Failed to parse message: ${err.message}`);
-    }
+ws.on("error", (err) => {
+  eventBus.emit("log", {
+    type: "ERROR",
+    channel: "ws",
+    value: `Connection error: ${err.message}`,
   });
+});
 
-  ws.on("close", () => {
-    logMessage("warn", "⚠️ Connection closed");
-  });
-
-  ws.on("error", (err) => {
-    logMessage("error", `WebSocket error: ${err.message}`);
-  });
-}
-
-module.exports = { connectWebSocket };
+ws.on("close", () => {
+  eventBus.emit("status", "Disconnected");
+});

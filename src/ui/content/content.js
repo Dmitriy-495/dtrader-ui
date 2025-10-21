@@ -4,13 +4,6 @@ const StatusBar = require("./statusbar");
 const Logs = require("./logs");
 const News = require("./news");
 
-/**
- * Центральная область контента между боковыми панелями.
- * Содержит:
- * - Logs (верхняя часть)
- * - News (нижняя часть)
- * - StatusBar (3 строки внизу)
- */
 class Content {
   constructor(bounds) {
     this.x = bounds.x;
@@ -18,7 +11,6 @@ class Content {
     this.width = bounds.width;
     this.height = bounds.height;
 
-    // Загружаем пропорции из .env
     const LOGS_HEIGHT_PERCENT = parseInt(
       process.env.LOGS_HEIGHT_PERCENT || "65"
     );
@@ -26,14 +18,10 @@ class Content {
       process.env.NEWS_HEIGHT_PERCENT || "35"
     );
 
-    // Высота без statusbar (теперь 3 строки)
     const subHeight = this.height - 3;
-
-    // Вычисляем высоты логов и новостей
     const logsHeight = Math.floor(subHeight * (LOGS_HEIGHT_PERCENT / 100));
     const newsHeight = subHeight - logsHeight;
 
-    // Инициализация компонентов
     this.logs = new Logs();
     this.logs.setBounds({
       x: this.x,
